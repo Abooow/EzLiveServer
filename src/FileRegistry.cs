@@ -9,27 +9,20 @@ public class FileRegistry
 
     private readonly ConcurrentDictionary<string, FileCollection> filesRegistry;
 
-    public FileRegistry(string defaultFileExtension)
-    {
-        DefaultFileExtension = defaultFileExtension;
-        BaseDirectory = "/";
-
-        filesRegistry = new();
-    }
-
-    public FileRegistry(string defaultFileExtension, string directory)
-        : this(defaultFileExtension)
+    public FileRegistry(string directory, string defaultFileExtension)
     {
         BaseDirectory = directory.ToLowerInvariant();
-        Initialize(directory);
+        DefaultFileExtension = defaultFileExtension;
+
+        filesRegistry = new();
+        AddDirectoryIndices(directory);
     }
 
     public void AddIndex(string filePath)
     {
-        UnpackFilePath(filePath, BaseDirectory, out string directory, out string fileName, out string? fileExtension);
-        string key = $"{directory}/";
+        UnpackFilePath(filePath, out string directory, out string fileName, out string? fileExtension);
 
-        if (filesRegistry.TryGetValue(key, out var fileCollection))
+        if (filesRegistry.TryGetValue(directory, out var fileCollection))
         {
             fileCollection.Add(fileName, fileExtension);
         }
@@ -37,16 +30,15 @@ public class FileRegistry
         {
             var newCollection = new FileCollection(DefaultFileExtension);
             newCollection.Add(fileName, fileExtension);
-            _ = filesRegistry.TryAdd(key, newCollection);
+            _ = filesRegistry.TryAdd(directory, newCollection);
         }
     }
 
     public string? GetIndex(string filePath)
     {
-        UnpackFilePath(filePath, "/", out string directory, out string fileName, out string? fileExtension);
-        string key = $"{directory}/";
+        UnpackFilePath(filePath, out string directory, out string fileName, out string? fileExtension);
 
-        if (filesRegistry.TryGetValue(key, out var fileCollection))
+        if (filesRegistry.TryGetValue(directory, out var fileCollection))
         {
             var fileIndex = fileCollection.Get(fileName, fileExtension);
             return fileIndex is null ? null : Path.Combine(BaseDirectory, $"{directory}\\{fileIndex.FileName}.{fileIndex.Extension}");
@@ -55,16 +47,15 @@ public class FileRegistry
         return null;
     }
 
-    public bool Remove(string filePath)
+    public bool RemoveIndex(string filePath)
     {
-        UnpackFilePath(filePath, "/", out string directory, out string fileName, out string? fileExtension);
-        string key = $"{directory}/";
+        UnpackFilePath(filePath, out string directory, out string fileName, out string? fileExtension);
 
-        if (filesRegistry.TryGetValue(key, out var fileCollection))
+        if (filesRegistry.TryGetValue(directory, out var fileCollection))
         {
             bool fileRemoved = fileCollection.Remove(fileName, fileExtension);
             if (fileRemoved && fileCollection.Count == 0)
-                filesRegistry.TryRemove(key, out _);
+                filesRegistry.TryRemove(directory, out _);
 
             return fileRemoved;
         }
@@ -72,16 +63,44 @@ public class FileRegistry
         return false;
     }
 
+    public bool RemoveCollectionIndex(string index)
+    {
+        index = NormalizeIndex(index);
+
+        return filesRegistry.TryRemove(index, out _);
+    }
+
     public bool UpdateIndex(string oldPath, string newPath)
     {
-        if (!Remove(oldPath))
+        if (!RemoveIndex(oldPath))
             return false;
 
         AddIndex(newPath);
         return true;
     }
 
-    private void Initialize(string directory)
+    public bool UpdateCollectionIndex(string oldIndex, string newIndex)
+    {
+        oldIndex = NormalizeIndex(oldIndex);
+        newIndex = NormalizeIndex(newIndex);
+
+        return filesRegistry.TryRemove(oldIndex, out var tempCollection) && filesRegistry.TryAdd(newIndex, tempCollection);
+    }
+
+    protected static string NormalizeIndex(string index)
+    {
+        if (index.Length == 0)
+            return "/";
+
+        string normalized = index.Replace("\\", "/").ToLowerInvariant();
+
+        normalized = normalized[0] != '/' ? '/' + normalized : normalized;
+        normalized = normalized[^1] == '/' ? normalized[..^1] : normalized;
+
+        return normalized;
+    }
+
+    protected void AddDirectoryIndices(string directory)
     {
         string[] files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
         foreach (string file in files)
@@ -90,12 +109,13 @@ public class FileRegistry
         }
     }
 
-    private static void UnpackFilePath(string filePath, string basePath, out string directory, out string fileName, out string? fileExtension)
+    private void UnpackFilePath(string filePath, out string directory, out string fileName, out string? fileExtension)
     {
         filePath = filePath.ToLowerInvariant();
-        string relativePath = Path.GetRelativePath(basePath, filePath);
+        bool fileHasDirectory = Path.GetDirectoryName(filePath)?.Length > 1;
+        string relativePath = Path.GetRelativePath(fileHasDirectory ? BaseDirectory : "/", filePath);
 
-        directory = Path.GetDirectoryName(relativePath)!;
+        directory = NormalizeIndex(Path.GetDirectoryName(relativePath)!);
         fileName = Path.GetFileNameWithoutExtension(filePath);
         fileExtension = Path.GetExtension(filePath)?.Length == 0 ? null : Path.GetExtension(filePath)[1..];
     }
