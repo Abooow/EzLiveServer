@@ -3,7 +3,7 @@ using System.Text;
 
 namespace EzLiveServer;
 
-public sealed class Server : IDisposable
+public class FileServer : IDisposable
 {
     public string[] Prefixes { get; private set; }
 
@@ -12,7 +12,7 @@ public sealed class Server : IDisposable
 
     private readonly CancellationTokenSource cancellationTokenSource;
 
-    public Server()
+    public FileServer()
     {
         httpListener = new HttpListener();
         useRandomPort = true;
@@ -21,7 +21,7 @@ public sealed class Server : IDisposable
         cancellationTokenSource = new CancellationTokenSource();
     }
 
-    public Server(params string[] prefixes)
+    public FileServer(params string[] prefixes)
     {
         httpListener = new HttpListener();
         SetServerPrefixes(prefixes);
@@ -53,15 +53,21 @@ public sealed class Server : IDisposable
         {
             var context = await httpListener.GetContextAsync().ConfigureAwait(false);
 
-            string body = "<h1>Hello EzLiveServer!</h1>";
-            var bodyBytes = Encoding.UTF8.GetBytes(body);
+            _ = Task.Run(() => HandleRequestAsync(context).ConfigureAwait(false));
 
-            context.Response.ContentType = "text/html";
-            await context.Response.OutputStream.WriteAsync(bodyBytes, cancellationTokenSource.Token);
-            await context.Response.OutputStream.FlushAsync(cancellationTokenSource.Token);
-
-            context.Response.Close();
         }
+    }
+
+    private async Task HandleRequestAsync(HttpListenerContext listenerContext)
+    {
+        string body = "<h1>Hello EzLiveServer!</h1>";
+        var bodyBytes = Encoding.UTF8.GetBytes(body);
+
+        listenerContext.Response.ContentType = "text/html";
+        await listenerContext.Response.OutputStream.WriteAsync(bodyBytes, cancellationTokenSource.Token);
+        await listenerContext.Response.OutputStream.FlushAsync(cancellationTokenSource.Token);
+
+        listenerContext.Response.Close();
     }
 
     private void SetServerPrefixes(params string[] prefixes)
