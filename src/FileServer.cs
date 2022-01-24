@@ -61,6 +61,16 @@ public class FileServer : Server
 
     private async Task WriteNotFoundToResponseAsync(string url, HttpListenerResponse httpResponse)
     {
+        httpResponse.ContentType = "text/html";
+        httpResponse.StatusCode = 404;
+        httpResponse.StatusDescription = "Not Found";
+
+        if (File.Exists(fileRegistryWatcher.BaseDirectory + "/404.html"))
+        {
+            await WriteFileToResponseAsync("/404.html", httpResponse);
+            return;
+        }
+
         string body = $@"
 <h1>404 Not Found</h1>
 <p>
@@ -70,10 +80,6 @@ public class FileServer : Server
 </p>";
 
         var bodyBytes = Encoding.UTF8.GetBytes(body);
-
-        httpResponse.ContentType = "text/html";
-        httpResponse.StatusCode = 404;
-        httpResponse.StatusDescription = "Not Found";
 
         await httpResponse.OutputStream.WriteAsync(bodyBytes, CancellationTokenSource.Token);
         await httpResponse.OutputStream.FlushAsync(CancellationTokenSource.Token);
