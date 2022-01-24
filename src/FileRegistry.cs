@@ -112,8 +112,8 @@ public class FileRegistry
     private void UnpackFilePath(string filePath, out string directory, out string fileName, out string? fileExtension)
     {
         filePath = filePath.ToLowerInvariant();
-        bool fileHasDirectory = Path.GetDirectoryName(filePath)?.Length > 1;
-        string relativePath = Path.GetRelativePath(fileHasDirectory ? BaseDirectory : "/", filePath);
+        bool relativeToBase = Path.GetDirectoryName(filePath)?.Length > 1 && filePath[0] != '/';
+        string relativePath = Path.GetRelativePath(relativeToBase ? BaseDirectory : "/", filePath);
 
         directory = NormalizeIndex(Path.GetDirectoryName(relativePath)!);
         fileName = Path.GetFileNameWithoutExtension(filePath);

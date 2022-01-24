@@ -22,15 +22,23 @@ public class Server : IDisposable
     public Server(int port)
         : this()
     {
-        SetServerPrefixes($"http://localhost:{port}");
         useRandomPort = false;
+        SetServerPrefixes($"http://localhost:{port}/");
+    }
+
+    protected Server(int? port)
+        : this()
+    {
+        useRandomPort = port is null;
+        if (!useRandomPort)
+            SetServerPrefixes($"http://localhost:{port}/");
     }
 
     public Server(params string[] prefixes)
         : this()
     {
-        SetServerPrefixes(prefixes);
         useRandomPort = false;
+        SetServerPrefixes(prefixes);
     }
 
     public void Start()
