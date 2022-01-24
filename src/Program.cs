@@ -1,6 +1,6 @@
 ﻿using EzLiveServer;
 
-using var server = new FileServer();
+using var server = new FileServer(@"C:\Users\danie\source\js\EzLiveServerTest");
 
 Console.WriteLine("Starting server...");
 server.Start();

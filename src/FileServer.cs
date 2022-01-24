@@ -3,100 +3,46 @@ using System.Text;
 
 namespace EzLiveServer;
 
-public class FileServer : IDisposable
+public class FileServer : Server
 {
-    public string[] Prefixes { get; private set; }
+    private readonly FileRegistryWatcher fileRegistryWatcher;
 
-    private readonly HttpListener httpListener;
-    private readonly bool useRandomPort;
-
-    private readonly CancellationTokenSource cancellationTokenSource;
-
-    public FileServer()
+    public FileServer(string baseDirectory)
     {
-        httpListener = new HttpListener();
-        useRandomPort = true;
-        SetServerPrefixes(GetNewLocalhostPrefixWithRandomPort());
+        fileRegistryWatcher = new(baseDirectory, "html");
 
-        cancellationTokenSource = new CancellationTokenSource();
+        fileRegistryWatcher.FileContentChanged += FileContentChangedEvent;
+        fileRegistryWatcher.IndexCollectionChanged += IndexCollectionChangedEvent;
+        fileRegistryWatcher.IndexChanged += IndexChangedEvent;
     }
 
-    public FileServer(params string[] prefixes)
+    protected override void StartInternal()
     {
-        httpListener = new HttpListener();
-        SetServerPrefixes(prefixes);
-
-        cancellationTokenSource = new CancellationTokenSource();
+        fileRegistryWatcher.StartWatching();
+        base.StartInternal();
     }
 
-    public void Start()
+    protected override async Task HandleRequestAsync(HttpListenerContext listenerContext)
     {
-        bool serverStartupSuccess = false;
-
-        do
-        {
-            try
-            {
-                httpListener.Start();
-                serverStartupSuccess = true;
-            }
-            catch (HttpListenerException) when (useRandomPort)
-            {
-                SetServerPrefixes(GetNewLocalhostPrefixWithRandomPort());
-            }
-        } while (!serverStartupSuccess);
-    }
-
-    public async Task StartListenToRequestsAsync()
-    {
-        while (!cancellationTokenSource.Token.IsCancellationRequested)
-        {
-            var context = await httpListener.GetContextAsync().ConfigureAwait(false);
-
-            _ = Task.Run(() => HandleRequestAsync(context).ConfigureAwait(false));
-
-        }
-    }
-
-    private async Task HandleRequestAsync(HttpListenerContext listenerContext)
-    {
-        string body = "<h1>Hello EzLiveServer!</h1>";
+        string body = "<h1>Hello FileServer!</h1>";
         var bodyBytes = Encoding.UTF8.GetBytes(body);
 
         listenerContext.Response.ContentType = "text/html";
-        await listenerContext.Response.OutputStream.WriteAsync(bodyBytes, cancellationTokenSource.Token);
-        await listenerContext.Response.OutputStream.FlushAsync(cancellationTokenSource.Token);
+        await listenerContext.Response.OutputStream.WriteAsync(bodyBytes, CancellationTokenSource.Token);
+        await listenerContext.Response.OutputStream.FlushAsync(CancellationTokenSource.Token);
 
         listenerContext.Response.Close();
     }
 
-    private void SetServerPrefixes(params string[] prefixes)
+    private void FileContentChangedEvent(string obj)
     {
-        httpListener.Prefixes.Clear();
-
-        foreach (var prefix in prefixes)
-        {
-            string fixedPrefix = prefix[^1] == '/' ? prefix : prefix + '/';
-            httpListener.Prefixes.Add(fixedPrefix);
-        }
-
-        Prefixes = prefixes;
     }
 
-    private static string GetNewLocalhostPrefixWithRandomPort() => $"http://localhost:{Random.Shared.Next(3000, 9000)}/";
-
-    public void Dispose()
+    private void IndexCollectionChangedEvent(string arg1, string arg2)
     {
-        try
-        {
-            httpListener.Stop();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        finally
-        {
-            cancellationTokenSource.Cancel();
-        }
+    }
+
+    private void IndexChangedEvent(string arg1, string arg2)
+    {
     }
 }
