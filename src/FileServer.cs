@@ -36,7 +36,7 @@ public class FileServer : Server
 
     protected override async Task HandleRequestAsync(HttpListenerContext listenerContext)
     {
-        string url = listenerContext.Request.Url!.AbsolutePath == "/" ? "/index" : HttpUtility.UrlDecode(listenerContext.Request.Url.AbsolutePath)!;
+        string url = listenerContext.Request.Url!.AbsolutePath == "/" ? "/index.html" : HttpUtility.UrlDecode(listenerContext.Request.Url.AbsolutePath)!;
         string? filePath = fileRegistryWatcher.GetIndex(url);
 
         Console.WriteLine($"{url}");
@@ -61,7 +61,8 @@ public class FileServer : Server
 
     private async Task WriteNotFoundToResponseAsync(string url, HttpListenerResponse httpResponse)
     {
-        httpResponse.ContentType = "text/html";
+        bool hasExtension = Path.GetExtension(url)?.Length > 0;
+        httpResponse.ContentType = GetContentType(hasExtension ? Path.GetExtension(url) : ".html");
         httpResponse.StatusCode = 404;
         httpResponse.StatusDescription = "Not Found";
 
