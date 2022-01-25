@@ -36,7 +36,7 @@ public class FileServer : Server
 
     protected override async Task HandleRequestAsync(HttpListenerContext listenerContext)
     {
-        string url = listenerContext.Request.RawUrl == "/" ? "/index" : HttpUtility.UrlDecode(listenerContext.Request.RawUrl)!;
+        string url = listenerContext.Request.Url!.AbsolutePath == "/" ? "/index" : HttpUtility.UrlDecode(listenerContext.Request.Url.AbsolutePath)!;
         string? filePath = fileRegistryWatcher.GetIndex(url);
 
         Console.WriteLine($"{url}");
