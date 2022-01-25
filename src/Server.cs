@@ -115,7 +115,9 @@ public class Server : IDisposable
         if (disposing)
         {
             CancellationTokenSource.Cancel();
+            CancellationTokenSource.Dispose();
             httpListener.Stop();
+            httpListener.Close();
         }
     }
 }
