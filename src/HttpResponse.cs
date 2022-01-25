@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 
 namespace EzLiveServer;
 
@@ -9,10 +10,7 @@ public static class HttpResponse
         byte[] fileBytes = await File.ReadAllBytesAsync(file, cancellationToken);
 
         httpResponse.ContentType = GetMIMEType(Path.GetExtension(file));
-        await httpResponse.OutputStream.WriteAsync(fileBytes, cancellationToken);
-        await httpResponse.OutputStream.FlushAsync(cancellationToken);
-
-        httpResponse.Close();
+        await WriteBytesAsync(httpResponse, fileBytes, cancellationToken);
     }
 
     public static Task NotFoundAsync(HttpListenerResponse httpResponse, string url, string notFoundHtmlFile, CancellationToken cancellationToken = default)
@@ -24,7 +22,38 @@ public static class HttpResponse
 
         return File.Exists(notFoundHtmlFile)
             ? FromFileAsync(httpResponse, notFoundHtmlFile, cancellationToken)
-            : FromFileAsync(httpResponse, "./Default404NotFound.html", cancellationToken);
+            : DefaultNotFoundAsync(httpResponse, url, cancellationToken);
+    }
+
+    private static async Task DefaultNotFoundAsync(HttpListenerResponse httpResponse, string url, CancellationToken cancellationToken = default)
+    {
+        if (File.Exists("./Default404NotFound.html"))
+        {
+            string notFoundTemplateStr = await File.ReadAllTextAsync("./Default404NotFound.html", cancellationToken);
+            var templateModel = new Dictionary<string, object>() { { "Url", url } };
+            string template = TemplateEngine.Run(notFoundTemplateStr, templateModel);
+
+            await WriteBytesAsync(httpResponse, Encoding.UTF8.GetBytes(template), cancellationToken);
+            return;
+        }
+
+        string templatse = $@"
+            <h1>404 Not Found</h1>
+            <p>
+                <strong>{url}</strong> was not found.
+                <a href=""#"" onclick=""location.reload(true)"">Refresh</a>
+                <a href=""/"">Home</a>
+            </p>";
+
+        await WriteBytesAsync(httpResponse, Encoding.UTF8.GetBytes(templatse), cancellationToken);
+    }
+
+    private static async Task WriteBytesAsync(HttpListenerResponse httpResponse, byte[] bytes, CancellationToken cancellationToken = default)
+    {
+        await httpResponse.OutputStream.WriteAsync(bytes, cancellationToken);
+        await httpResponse.OutputStream.FlushAsync(cancellationToken);
+
+        httpResponse.Close();
     }
 
     public static string GetMIMEType(string fileExtension)
