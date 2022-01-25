@@ -106,16 +106,16 @@ public class Server : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            httpListener.Stop();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        finally
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
         {
             CancellationTokenSource.Cancel();
+            httpListener.Stop();
         }
     }
 }

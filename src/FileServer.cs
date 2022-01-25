@@ -63,4 +63,16 @@ public class FileServer : Server
     private void IndexChangedEvent(string arg1, string arg2)
     {
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        fileRegistryWatcher.Dispose();
+
+        base.Dispose(disposing);
+    }
+
+    ~FileServer()
+    {
+        Dispose(false);
+    }
 }
