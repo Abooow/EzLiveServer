@@ -16,7 +16,7 @@ public static class HttpResponse
     public static Task NotFoundAsync(HttpListenerResponse httpResponse, string url, string notFoundHtmlFile, CancellationToken cancellationToken = default)
     {
         bool hasExtension = Path.GetExtension(url)?.Length > 0;
-        httpResponse.ContentType = GetMIMEType(hasExtension ? Path.GetExtension(url) : ".html");
+        httpResponse.ContentType = ".html";
         httpResponse.StatusCode = 404;
         httpResponse.StatusDescription = "Not Found";
 

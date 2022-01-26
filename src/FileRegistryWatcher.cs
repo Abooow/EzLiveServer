@@ -7,6 +7,8 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
     public event Action<string, string>? IndexChanged;
 
     private readonly FileSystemWatcher fileSystemWatcher;
+    private readonly Dictionary<string, long> lastFileChangeTime;
+    private readonly long updateRateTicks;
 
     public FileRegistryWatcher(string directory, string defaultFileExtension)
         : base(directory, defaultFileExtension)
@@ -23,6 +25,9 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
         fileSystemWatcher.Renamed += OnRenamed;
 
         fileSystemWatcher.Filters.Add("*");
+
+        lastFileChangeTime = new();
+        updateRateTicks = TimeSpan.FromMilliseconds(50).Ticks;
     }
 
     public void StartWatching()
@@ -37,12 +42,21 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
 
     private void OnChanged(object sender, FileSystemEventArgs e)
     {
-        if (e.ChangeType == WatcherChangeTypes.Changed)
-        {
-            bool isFile = File.Exists(e.FullPath);
-            if (isFile)
-                FileContentChanged?.Invoke(NormalizeIndex(e.Name!));
-        }
+        if (e.ChangeType != WatcherChangeTypes.Changed)
+            return;
+
+        string normalizedPath = e.FullPath.ToUpperInvariant();
+        bool hasBeenCached = lastFileChangeTime.TryGetValue(normalizedPath, out long lastChangeTime);
+
+        long ticksNow = DateTime.Now.Ticks;
+        if (hasBeenCached && ticksNow - lastChangeTime < updateRateTicks)
+            return;
+
+        lastFileChangeTime[normalizedPath] = ticksNow;
+
+        bool isFile = File.Exists(e.FullPath);
+        if (isFile)
+            FileContentChanged?.Invoke(NormalizeIndex(e.Name!));
     }
 
     private void OnCreated(object sender, FileSystemEventArgs e)
@@ -61,6 +75,8 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
             RemoveIndex(e.FullPath);
         else
             RemoveCollectionIndex(e.Name!);
+
+        _ = lastFileChangeTime.Remove(e.FullPath.ToUpperInvariant());
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e)
@@ -76,5 +92,10 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
             UpdateCollectionIndex(e.OldName!, e.Name!);
             IndexCollectionChanged?.Invoke(NormalizeIndex(e.OldName!), NormalizeIndex(e.Name!));
         }
+
+
+        string normalizedPath = e.FullPath.ToUpperInvariant();
+        if (lastFileChangeTime.Remove(normalizedPath, out long lastChangeTime))
+            lastFileChangeTime[normalizedPath] = lastChangeTime;
     }
 }

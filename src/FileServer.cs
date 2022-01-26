@@ -74,9 +74,9 @@ public class FileServer : Server
         string extension = Path.GetExtension(path);
         string message = extension switch
         {
-            ".html" or ".js" => "reload " + path,
-            ".css" => "refreshcss " + path,
-            _ => "updated " + path
+            ".html" or ".js" => $"reload {path}",
+            ".css" => $"refreshcss {path}",
+            _ => $"updated {path}"
         };
 
         webSocketServer.Broadcast(message);
