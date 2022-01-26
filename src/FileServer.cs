@@ -62,6 +62,11 @@ public class FileServer : Server
             string notFoundHtmlFile = fileRegistryWatcher.BaseDirectory + "/404.html";
             await HttpResponse.NotFoundAsync(listenerContext.Response, url, notFoundHtmlFile, CancellationTokenSource.Token);
         }
+        else if (Path.GetExtension(filePath) == ".html")
+        {
+            string path = fileRegistryWatcher.BaseDirectory + filePath;
+            await HttpResponse.FromCodeInjectedHtmlFileAsync(listenerContext.Response, path, CancellationTokenSource.Token);
+        }
         else
         {
             string path = fileRegistryWatcher.BaseDirectory + filePath;

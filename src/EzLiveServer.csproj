@@ -9,12 +9,20 @@
 
   <ItemGroup>
     <None Remove="Default404NotFound.html" />
+    <None Remove="InjectedToResponse.html" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Default404NotFound.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="InjectedToResponse.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.40" />
   </ItemGroup>
 
 </Project>

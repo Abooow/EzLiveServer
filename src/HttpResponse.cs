@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using HtmlAgilityPack;
+using System.Net;
 using System.Text;
 
 namespace EzLiveServer;
@@ -13,9 +14,27 @@ public static class HttpResponse
         await WriteBytesAsync(httpResponse, fileBytes, cancellationToken);
     }
 
+    public static async Task FromCodeInjectedHtmlFileAsync(HttpListenerResponse httpResponse, string file, CancellationToken cancellationToken = default)
+    {
+        httpResponse.ContentType = GetMIMEType(".html");
+
+        string htmlFileContent = await File.ReadAllTextAsync(file, cancellationToken);
+        string injectedHtmlFileContent = await File.ReadAllTextAsync("./InjectedToResponse.html", cancellationToken);
+
+        var document = new HtmlDocument();
+        document.LoadHtml(htmlFileContent);
+
+        var bodyNode = document.DocumentNode.SelectSingleNode("//body");
+        var injectedHtmlNode = HtmlNode.CreateNode(injectedHtmlFileContent);
+
+        bodyNode.ParentNode.AppendChild(injectedHtmlNode);
+
+        string newHtml = document.DocumentNode.OuterHtml;
+        await WriteBytesAsync(httpResponse, Encoding.UTF8.GetBytes(newHtml), cancellationToken);
+    }
+
     public static Task NotFoundAsync(HttpListenerResponse httpResponse, string url, string notFoundHtmlFile, CancellationToken cancellationToken = default)
     {
-        bool hasExtension = Path.GetExtension(url)?.Length > 0;
         httpResponse.ContentType = ".html";
         httpResponse.StatusCode = 404;
         httpResponse.StatusDescription = "Not Found";
