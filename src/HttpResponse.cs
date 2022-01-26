@@ -83,7 +83,7 @@ public static class HttpResponse
             ".css" => "text/css",
             ".js" => "text/javascript",
             ".txt" => "text/plain",
-            ".ico" => "text/x-icon",
+            ".ico" => "image/x-icon",
             ".png" => "image/png",
             ".jpeg" => "image/jpeg",
             ".gif" => "image/html",
