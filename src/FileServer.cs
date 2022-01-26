@@ -6,6 +6,8 @@ namespace EzLiveServer;
 public class FileServer : Server
 {
     private readonly FileRegistryWatcher fileRegistryWatcher;
+    private readonly WebSocketServer webSocketServer;
+    private int wsCounter;
 
     public FileServer(string baseDirectory)
         : this(baseDirectory, null)
@@ -21,6 +23,13 @@ public class FileServer : Server
         : base(port)
     {
         fileRegistryWatcher = new(baseDirectory, "html");
+        webSocketServer = new();
+
+        webSocketServer.MessageRecived += async (id, message) =>
+        {
+            if (message == "PING")
+                webSocketServer.SendMessage("PONG", id);
+        };
 
         fileRegistryWatcher.FileContentChanged += FileContentChangedEvent;
         fileRegistryWatcher.IndexCollectionChanged += IndexCollectionChangedEvent;
@@ -35,6 +44,14 @@ public class FileServer : Server
 
     protected override async Task HandleRequestAsync(HttpListenerContext listenerContext)
     {
+        if (listenerContext.Request.IsWebSocketRequest)
+        {
+            var wsContext = await listenerContext.AcceptWebSocketAsync(null);
+            int socketId = Interlocked.Increment(ref wsCounter);
+            webSocketServer.ProcessWebSocket(socketId, wsContext.WebSocket);
+            return;
+        }
+
         string url = listenerContext.Request.Url!.AbsolutePath == "/" ? "/index.html" : HttpUtility.UrlDecode(listenerContext.Request.Url.AbsolutePath)!;
         string? filePath = fileRegistryWatcher.GetIndex(url);
 
@@ -52,21 +69,33 @@ public class FileServer : Server
         }
     }
 
-    private void FileContentChangedEvent(string obj)
+    private void FileContentChangedEvent(string path)
+    {
+        string extension = Path.GetExtension(path);
+        string message = extension switch
+        {
+            ".html" or ".js" => "reload " + path,
+            ".css" => "refreshcss " + path,
+            _ => "updated " + path
+        };
+
+        webSocketServer.Broadcast(message);
+    }
+
+    private void IndexCollectionChangedEvent(string oldIndexCollection, string newIndexCollection)
     {
     }
 
-    private void IndexCollectionChangedEvent(string arg1, string arg2)
-    {
-    }
-
-    private void IndexChangedEvent(string arg1, string arg2)
+    private void IndexChangedEvent(string oldIndex, string newIndex)
     {
     }
 
     protected override void Dispose(bool disposing)
     {
         fileRegistryWatcher.Dispose();
+        webSocketServer.DisposeAsync()
+            .GetAwaiter()
+            .GetResult();
 
         base.Dispose(disposing);
     }

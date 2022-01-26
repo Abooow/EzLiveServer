@@ -12,7 +12,7 @@ public sealed class WebSocketServer : IAsyncDisposable
     private readonly CancellationTokenSource cancellationTokenSource;
     private readonly int broadcastTransmitInterval;
 
-    public WebSocketServer(int broadcastTransmitInterval = 250)
+    public WebSocketServer(int broadcastTransmitInterval = 100)
     {
         webSocketClients = new();
         cancellationTokenSource = new();
