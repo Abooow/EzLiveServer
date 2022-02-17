@@ -1,6 +1,6 @@
-﻿using HtmlAgilityPack;
-using System.Net;
+﻿using System.Net;
 using System.Text;
+using HtmlAgilityPack;
 
 namespace EzLiveServer;
 
@@ -42,6 +42,20 @@ public static class HttpResponse
         return File.Exists(notFoundHtmlFile)
             ? FromFileAsync(httpResponse, notFoundHtmlFile, cancellationToken)
             : DefaultNotFoundAsync(httpResponse, url, cancellationToken);
+    }
+
+    public static void NotModified(HttpListenerResponse httpResponse)
+    {
+        httpResponse.StatusCode = 304;
+        httpResponse.StatusDescription = "Not Modified";
+
+        httpResponse.Close();
+    }
+
+    public static void LastModified(HttpListenerResponse httpResponse, DateTime dateTime)
+    {
+        httpResponse.Headers.Add("Last-Modified", dateTime.ToUniversalTime().ToString("R"));
+        httpResponse.Headers.Add("Cache-Control", "public, max-age=0");
     }
 
     private static async Task DefaultNotFoundAsync(HttpListenerResponse httpResponse, string url, CancellationToken cancellationToken = default)

@@ -34,14 +34,16 @@ public class FileRegistry
         }
     }
 
-    public string? GetIndex(string filePath)
+    public (string FilePath, DateTime LastModified)? GetIndex(string filePath)
     {
         UnpackFilePath(filePath, out string directory, out string fileName, out string? fileExtension);
 
         if (filesRegistry.TryGetValue(directory, out var fileCollection))
         {
             var fileIndex = fileCollection.Get(fileName, fileExtension);
-            return fileIndex is null ? null : Path.Combine(BaseDirectory, $"{directory}\\{fileIndex.FileName}.{fileIndex.Extension}");
+            return fileIndex is null
+                ? null
+                : (Path.Combine(BaseDirectory, $"{directory}\\{fileIndex.FileName}.{fileIndex.Extension}"), fileIndex.LastModified);
         }
 
         return null;

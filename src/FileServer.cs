@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Web;
 
 namespace EzLiveServer;
@@ -55,25 +56,41 @@ public sealed class FileServer : Server
         }
 
         string url = listenerContext.Request.Url!.AbsolutePath == "/" ? "/index.html" : HttpUtility.UrlDecode(listenerContext.Request.Url.AbsolutePath)!;
-        string? filePath = fileRegistryWatcher.GetIndex(url);
+        var file = fileRegistryWatcher.GetIndex(url);
 
         Console.WriteLine($"{url}");
 
-        if (filePath is null)
+        if (file is null)
         {
             string notFoundHtmlFile = fileRegistryWatcher.BaseDirectory + "/404.html";
             await HttpResponse.NotFoundAsync(listenerContext.Response, url, notFoundHtmlFile, CancellationTokenSource.Token);
+            return;
         }
-        else if (Path.GetExtension(filePath) == ".html")
+
+        HttpResponse.LastModified(listenerContext.Response, file.Value.LastModified);
+
+        if (!RequestedResourceHasBeenUpdated(listenerContext.Request, file.Value.LastModified))
         {
-            string path = fileRegistryWatcher.BaseDirectory + filePath;
+            HttpResponse.NotModified(listenerContext.Response);
+            return;
+        }
+
+        string path = fileRegistryWatcher.BaseDirectory + file.Value.FilePath;
+        if (Path.GetExtension(path) == ".html")
             await HttpResponse.FromCodeInjectedHtmlFileAsync(listenerContext.Response, path, CancellationTokenSource.Token);
-        }
         else
-        {
-            string path = fileRegistryWatcher.BaseDirectory + filePath;
             await HttpResponse.FromFileAsync(listenerContext.Response, path, CancellationTokenSource.Token);
-        }
+    }
+
+    private static bool RequestedResourceHasBeenUpdated(HttpListenerRequest request, DateTime lastModified)
+    {
+        string? lastModifiedHeader = request.Headers["If-Modified-Since"];
+        if (lastModifiedHeader is null)
+            return true;
+
+        var clientLastModifiedDate = DateTime.Parse(lastModifiedHeader).ToUniversalTime();
+        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Remove ms.
+        return lastModified > clientLastModifiedDate;
     }
 
     private void FileContentChangedEvent(string path)
