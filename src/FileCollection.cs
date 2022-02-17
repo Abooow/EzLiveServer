@@ -1,10 +1,12 @@
-﻿namespace EzLiveServer;
+﻿using System.Collections.Concurrent;
+
+namespace EzLiveServer;
 
 public class FileCollection
 {
     public int Count => fileIndices.Count;
 
-    private readonly List<FileIndex> fileIndices;
+    private readonly ConcurrentDictionary<string, FileIndex> fileIndices;
     private readonly string defaultFileExtension;
 
     public FileCollection()
@@ -18,12 +20,12 @@ public class FileCollection
         fileIndices = new();
     }
 
-    public void Add(string fileName, string? extension)
+    public void Add(string fileName, string? extension, DateTime lastModified)
     {
         fileName = fileName.ToLowerInvariant();
         extension = extension?.ToLowerInvariant() ?? defaultFileExtension;
 
-        fileIndices.Add(new FileIndex(fileName, extension));
+        fileIndices.TryAdd($"{fileName}.{extension}", new FileIndex(fileName, extension, lastModified));
     }
 
     public bool Remove(string fileName, string? extension)
@@ -31,8 +33,7 @@ public class FileCollection
         fileName = fileName.ToLowerInvariant();
         extension = extension?.ToLowerInvariant() ?? defaultFileExtension;
 
-        var fileIndex = fileIndices.Find(x => x.FileName == fileName && x.Extension == extension);
-        return fileIndices.Remove(fileIndex!);
+        return fileIndices.TryRemove($"{fileName}.{extension}", out _);
     }
 
     public FileIndex? Get(string fileName, string? extension)
@@ -40,8 +41,19 @@ public class FileCollection
         fileName = fileName.ToLowerInvariant();
         extension = extension?.ToLowerInvariant() ?? defaultFileExtension;
 
-        return fileIndices.Find(x => x.FileName == fileName && x.Extension == extension);
+        bool found = fileIndices.TryGetValue($"{fileName}.{extension}", out var fileIndex);
+        return found ? fileIndex : null;
+    }
+
+    public void UpdateLastModifiedDate(string fileName, string? extension, DateTime newDate)
+    {
+        fileName = fileName.ToLowerInvariant();
+        extension = extension?.ToLowerInvariant() ?? defaultFileExtension;
+
+        bool found = fileIndices.TryGetValue($"{fileName}.{extension}", out var oldIndex);
+        if (found)
+            fileIndices.TryUpdate($"{fileName}.{extension}", oldIndex! with { LastModified = newDate }, oldIndex);
     }
 }
 
-public record FileIndex(string FileName, string Extension);
+public record FileIndex(string FileName, string Extension, DateTime LastModified);

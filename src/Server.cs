@@ -5,7 +5,7 @@ namespace EzLiveServer;
 
 public class Server : IDisposable
 {
-    public string[] Prefixes { get; private set; }
+    public string[]? Prefixes { get; private set; }
 
     protected readonly CancellationTokenSource CancellationTokenSource;
 

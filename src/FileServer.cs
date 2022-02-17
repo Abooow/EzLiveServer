@@ -3,7 +3,7 @@ using System.Web;
 
 namespace EzLiveServer;
 
-public class FileServer : Server
+public sealed class FileServer : Server
 {
     private readonly FileRegistryWatcher fileRegistryWatcher;
     private readonly WebSocketServer webSocketServer;
@@ -25,10 +25,12 @@ public class FileServer : Server
         fileRegistryWatcher = new(baseDirectory, "html");
         webSocketServer = new();
 
-        webSocketServer.MessageRecived += async (id, message) =>
+        webSocketServer.MessageRecived += (id, message) =>
         {
             if (message == "PING")
                 webSocketServer.SendMessage("PONG", id);
+
+            return Task.CompletedTask;
         };
 
         fileRegistryWatcher.FileContentChanged += FileContentChangedEvent;

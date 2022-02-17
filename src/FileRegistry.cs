@@ -18,18 +18,18 @@ public class FileRegistry
         AddDirectoryIndices(directory);
     }
 
-    public void AddIndex(string filePath)
+    public void AddIndex(string filePath, DateTime lastModified)
     {
         UnpackFilePath(filePath, out string directory, out string fileName, out string? fileExtension);
 
-        if (filesRegistry.TryGetValue(directory, out var fileCollection))
+        if (filesRegistry.TryGetValue(directory, out FileCollection? fileCollection))
         {
-            fileCollection.Add(fileName, fileExtension);
+            fileCollection.Add(fileName, fileExtension, lastModified);
         }
         else
         {
             var newCollection = new FileCollection(DefaultFileExtension);
-            newCollection.Add(fileName, fileExtension);
+            newCollection.Add(fileName, fileExtension, lastModified);
             _ = filesRegistry.TryAdd(directory, newCollection);
         }
     }
@@ -75,8 +75,16 @@ public class FileRegistry
         if (!RemoveIndex(oldPath))
             return false;
 
-        AddIndex(newPath);
+        AddIndex(newPath, DateTime.UtcNow);
         return true;
+    }
+
+    public void UpdateIndexLastModifiedDate(string index, DateTime newDate)
+    {
+        UnpackFilePath(index, out string directory, out string fileName, out string? fileExtension);
+
+        if (filesRegistry.TryGetValue(directory, out var fileCollection))
+            fileCollection.UpdateLastModifiedDate(fileName, fileExtension, newDate);
     }
 
     public bool UpdateCollectionIndex(string oldIndex, string newIndex)
@@ -105,7 +113,7 @@ public class FileRegistry
         string[] files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
         foreach (string file in files)
         {
-            AddIndex(file);
+            AddIndex(file, new FileInfo(file).LastWriteTimeUtc);
         }
     }
 

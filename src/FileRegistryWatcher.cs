@@ -1,4 +1,6 @@
-﻿namespace EzLiveServer;
+﻿using System.IO;
+
+namespace EzLiveServer;
 
 public sealed class FileRegistryWatcher : FileRegistry, IDisposable
 {
@@ -56,14 +58,17 @@ public sealed class FileRegistryWatcher : FileRegistry, IDisposable
 
         bool isFile = File.Exists(e.FullPath);
         if (isFile)
+        {
+            UpdateIndexLastModifiedDate(normalizedPath, DateTime.UtcNow);
             FileContentChanged?.Invoke(NormalizeIndex(e.Name!));
+        }
     }
 
     private void OnCreated(object sender, FileSystemEventArgs e)
     {
         bool isFile = File.Exists(e.FullPath);
         if (isFile)
-            AddIndex(e.FullPath);
+            AddIndex(e.FullPath, DateTime.UtcNow);
         else
             AddDirectoryIndices(e.FullPath);
     }
