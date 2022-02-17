@@ -36,11 +36,11 @@
             var styleSheets = [].slice
                 .call(document.getElementsByTagName("link"))
                 .filter(x => x.rel?.toLowerCase() === 'stylesheet')
-                .filter(x => x.href.startsWith(window.location.origin + path)); // BUG: don't use startsWith
+                .filter(x => x.href.toLowerCase().split('?')[0] == window.location.origin + path);
 
             for (const styleSheet of styleSheets) {
-                var href = styleSheet.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                styleSheet.href = href + (href.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                var href = styleSheet.href.replace(/(&|\?)cacheOverride=\d+/, '');
+                styleSheet.href = href + (href.indexOf('?') >= 0 ? '&' : '?') + 'cacheOverride=' + (new Date().valueOf());
             }
         }
     })()
