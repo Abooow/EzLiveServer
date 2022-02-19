@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Web;
 
 namespace EzLiveServer;
@@ -10,39 +9,36 @@ public sealed class FileServer : Server
     private readonly WebSocketServer webSocketServer;
     private int wsCounter;
 
-    public FileServer(string baseDirectory)
-        : this(baseDirectory, null)
-    {
-    }
-
     public FileServer(string baseDirectory, int port)
-        : this(baseDirectory, (int?)port)
+        : this(baseDirectory, $"http://localhost:{port}/")
     {
     }
 
-    private FileServer(string baseDirectory, int? port)
-        : base(port)
+    public FileServer(string baseDirectory, params string[] prefixes)
+        : base(prefixes)
     {
         fileRegistryWatcher = new(baseDirectory, "html");
         webSocketServer = new();
 
-        webSocketServer.MessageRecived += (id, message) =>
-        {
-            if (message == "PING")
-                webSocketServer.SendMessage("PONG", id);
-
-            return Task.CompletedTask;
-        };
+        webSocketServer.MessageRecived += HandleWebsocketMessage;
 
         fileRegistryWatcher.FileContentChanged += FileContentChangedEvent;
         fileRegistryWatcher.IndexCollectionChanged += IndexCollectionChangedEvent;
         fileRegistryWatcher.IndexChanged += IndexChangedEvent;
     }
 
+    private Task HandleWebsocketMessage(int websocketId, string message)
+    {
+        if (message == "PING")
+            webSocketServer.SendMessage("PONG", websocketId);
+
+        return Task.CompletedTask;
+    }
+
     protected override void StartInternal()
     {
-        fileRegistryWatcher.StartWatching();
         base.StartInternal();
+        fileRegistryWatcher.StartWatching();
     }
 
     protected override async Task HandleRequestAsync(HttpListenerContext listenerContext)
@@ -89,7 +85,7 @@ public sealed class FileServer : Server
             return true;
 
         var clientLastModifiedDate = DateTime.Parse(lastModifiedHeader).ToUniversalTime();
-        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Remove ms.
+        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Remove milliseconds.
         return lastModified > clientLastModifiedDate;
     }
 
