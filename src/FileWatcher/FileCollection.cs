@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace EzLiveServer;
+namespace EzLiveServer.FileWatcher;
 
 public class FileCollection
 {
@@ -55,5 +55,3 @@ public class FileCollection
             fileIndices.TryUpdate($"{fileName}.{extension}", oldIndex! with { LastModified = newDate }, oldIndex);
     }
 }
-
-public record FileIndex(string FileName, string Extension, DateTime LastModified);

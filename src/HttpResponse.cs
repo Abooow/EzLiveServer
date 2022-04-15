@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text;
+using EzLiveServer.Templating;
 using HtmlAgilityPack;
 
 namespace EzLiveServer;
@@ -19,7 +20,7 @@ public static class HttpResponse
         httpResponse.ContentType = GetMIMEType(".html");
 
         string htmlFileContent = await File.ReadAllTextAsync(file, cancellationToken);
-        string injectedHtmlFileContent = await File.ReadAllTextAsync("./InjectedToResponse.html", cancellationToken);
+        string injectedHtmlFileContent = await File.ReadAllTextAsync("./StaticContent/InjectedToResponse.html", cancellationToken);
 
         var document = new HtmlDocument();
         document.LoadHtml(htmlFileContent);
@@ -60,9 +61,9 @@ public static class HttpResponse
 
     private static async Task DefaultNotFoundAsync(HttpListenerResponse httpResponse, string url, CancellationToken cancellationToken = default)
     {
-        if (File.Exists("./Default404NotFound.html"))
+        if (File.Exists("./StaticContent/Default404NotFound.html"))
         {
-            string notFoundTemplateStr = await File.ReadAllTextAsync("./Default404NotFound.html", cancellationToken);
+            string notFoundTemplateStr = await File.ReadAllTextAsync("./StaticContent/Default404NotFound.html", cancellationToken);
             var templateModel = new Dictionary<string, object>() { { "Url", url } };
             string template = TemplateEngine.Run(notFoundTemplateStr, templateModel);
 

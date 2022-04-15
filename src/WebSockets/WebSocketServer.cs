@@ -2,7 +2,7 @@
 using System.Net.WebSockets;
 using System.Text;
 
-namespace EzLiveServer;
+namespace EzLiveServer.WebSockets;
 
 public sealed class WebSocketServer : IAsyncDisposable
 {

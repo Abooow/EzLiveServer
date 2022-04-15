@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Default404NotFound.html">
+    <EmbeddedResource Include="StaticContent\Default404NotFound.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="InjectedToResponse.html">
+    <EmbeddedResource Include="StaticContent\InjectedToResponse.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>

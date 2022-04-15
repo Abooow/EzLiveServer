@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace EzLiveServer;
+﻿namespace EzLiveServer.FileWatcher;
 
 public sealed class FileRegistryWatcher : FileRegistry, IDisposable
 {

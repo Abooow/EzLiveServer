@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace EzLiveServer;
+namespace EzLiveServer.FileWatcher;
 
 public class FileRegistry
 {
