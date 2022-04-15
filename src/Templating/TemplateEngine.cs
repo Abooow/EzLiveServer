@@ -5,7 +5,6 @@ namespace EzLiveServer.Templating;
 
 public static class TemplateEngine
 {
-
     private const string propertyRegexString = @"(?:[^@]|^)(@(\w+))";
     private static readonly Regex propertyRegex = new(propertyRegexString, RegexOptions.Multiline | RegexOptions.Compiled);
 
@@ -47,5 +46,3 @@ public static class TemplateEngine
         return properties;
     }
 }
-
-public record TemplateProperty(string Raw, string Name, int Index, int Length);
