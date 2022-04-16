@@ -1,12 +1,14 @@
 ﻿using System.Net;
 using System.Web;
 using EzLiveServer.FileWatcher;
+using EzLiveServer.Options;
 using EzLiveServer.WebSockets;
 
 namespace EzLiveServer;
 
 public sealed class FileServer : Server
 {
+    private readonly FileServerOptions fileServerOptions;
     private readonly FileRegistryWatcher fileRegistryWatcher;
     private readonly WebSocketServer webSocketServer;
     private int wsCounter;
@@ -16,10 +18,17 @@ public sealed class FileServer : Server
     {
     }
 
-    public FileServer(string baseDirectory, params string[] prefixes)
-        : base(prefixes)
+    public FileServer(string baseDirectory, params string[] uriPrefixes)
+        : this(new FileServerOptions(baseDirectory, uriPrefixes, null, null))
     {
-        fileRegistryWatcher = new(baseDirectory, "html");
+    }
+
+    public FileServer(FileServerOptions fileServerOptions)
+    : base(fileServerOptions.UriPrefixes.ToArray())
+    {
+        this.fileServerOptions = fileServerOptions;
+
+        fileRegistryWatcher = new(fileServerOptions.BaseDirectory, "html");
         webSocketServer = new();
 
         webSocketServer.MessageRecived += HandleWebsocketMessage;
@@ -60,8 +69,8 @@ public sealed class FileServer : Server
 
         if (file is null)
         {
-            string notFoundHtmlFile = fileRegistryWatcher.BaseDirectory + "/404.html";
-            await HttpResponse.NotFoundAsync(listenerContext.Response, url, notFoundHtmlFile, CancellationTokenSource.Token);
+            string notFoundHtmlFile = fileServerOptions.BaseDirectory + "/404.html";
+            await HttpResponse.NotFoundAsync(listenerContext.Response, url, notFoundHtmlFile, fileServerOptions.DefaultNotFoundFilePath, CancellationTokenSource.Token);
             return;
         }
 
@@ -73,9 +82,9 @@ public sealed class FileServer : Server
             return;
         }
 
-        string path = fileRegistryWatcher.BaseDirectory + file.Value.FilePath;
+        string path = fileServerOptions.BaseDirectory + file.Value.FilePath;
         if (Path.GetExtension(path) == ".html")
-            await HttpResponse.FromCodeInjectedHtmlFileAsync(listenerContext.Response, path, CancellationTokenSource.Token);
+            await HttpResponse.FromCodeInjectedHtmlFileAsync(listenerContext.Response, path, fileServerOptions.InjectedFilePath, CancellationTokenSource.Token);
         else
             await HttpResponse.FromFileAsync(listenerContext.Response, path, CancellationTokenSource.Token);
     }
@@ -87,7 +96,7 @@ public sealed class FileServer : Server
             return true;
 
         var clientLastModifiedDate = DateTime.Parse(lastModifiedHeader).ToUniversalTime();
-        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Remove milliseconds.
+        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Removes milliseconds.
         return lastModified > clientLastModifiedDate;
     }
 

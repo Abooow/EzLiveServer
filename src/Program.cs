@@ -1,13 +1,21 @@
 ﻿using EzLiveServer;
+using EzLiveServer.Options;
 
-using var server = new FileServer(@"\", 5069);
+var options = new FileServerOptionsBuilder()
+    .WithPort(5069)
+    .WithBaseDirectory(@"/")
+    .WithInjectedFilePath("./StaticContent/InjectedToResponse.html")
+    .WithDefaultNotFoundFilePath("./StaticContent/Default404NotFound.html")
+    .Build();
+
+using var server = new FileServer(options);
 
 Console.WriteLine("Starting server...");
 server.Start();
 
-foreach (var prefix in server.Prefixes)
+foreach (string uri in server.UriPrefixes)
 {
-    Console.WriteLine($"Listening on: {prefix}");
+    Console.WriteLine($"Listening on: {uri}");
 }
 
 await server.StartListenToRequestsAsync();

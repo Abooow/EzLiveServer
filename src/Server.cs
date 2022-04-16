@@ -5,7 +5,7 @@ namespace EzLiveServer;
 
 public class Server : IDisposable
 {
-    public string[] Prefixes { get; private set; }
+    public string[] UriPrefixes { get; private set; }
 
     protected readonly CancellationTokenSource CancellationTokenSource;
     private readonly HttpListener httpListener;
@@ -15,13 +15,13 @@ public class Server : IDisposable
     {
     }
 
-    public Server(params string[] prefixes)
+    public Server(params string[] uriPrefixes)
     {
         httpListener = new HttpListener();
         CancellationTokenSource = new CancellationTokenSource();
 
-        SetServerPrefixes(prefixes);
-        Prefixes = httpListener.Prefixes.ToArray();
+        SetServerUriPrefixes(uriPrefixes);
+        UriPrefixes = httpListener.Prefixes.ToArray();
     }
 
     public void Start()
@@ -56,13 +56,13 @@ public class Server : IDisposable
         listenerContext.Response.Close();
     }
 
-    private void SetServerPrefixes(string[] prefixes)
+    private void SetServerUriPrefixes(string[] uriPrefixes)
     {
         httpListener.Prefixes.Clear();
 
-        foreach (var prefix in prefixes)
+        foreach (string uri in uriPrefixes)
         {
-            string fixedPrefix = prefix[^1] == '/' ? prefix : prefix + '/';
+            string fixedPrefix = uri[^1] == '/' ? uri : uri + '/';
             httpListener.Prefixes.Add(fixedPrefix);
         }
     }

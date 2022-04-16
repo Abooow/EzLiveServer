@@ -7,20 +7,26 @@ namespace EzLiveServer;
 
 public static class HttpResponse
 {
-    public static async Task FromFileAsync(HttpListenerResponse httpResponse, string file, CancellationToken cancellationToken = default)
+    public static async Task FromFileAsync(HttpListenerResponse httpResponse, string filePath, CancellationToken cancellationToken = default)
     {
-        byte[] fileBytes = await File.ReadAllBytesAsync(file, cancellationToken);
+        byte[] fileBytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
 
-        httpResponse.ContentType = GetMIMEType(Path.GetExtension(file));
+        httpResponse.ContentType = GetMIMEType(Path.GetExtension(filePath));
         await WriteBytesAsync(httpResponse, fileBytes, cancellationToken);
     }
 
-    public static async Task FromCodeInjectedHtmlFileAsync(HttpListenerResponse httpResponse, string file, CancellationToken cancellationToken = default)
+    public static async Task FromCodeInjectedHtmlFileAsync(HttpListenerResponse httpResponse, string filePath, string? injectedFilePath, CancellationToken cancellationToken = default)
     {
         httpResponse.ContentType = GetMIMEType(".html");
 
-        string htmlFileContent = await File.ReadAllTextAsync(file, cancellationToken);
-        string injectedHtmlFileContent = await File.ReadAllTextAsync("./StaticContent/InjectedToResponse.html", cancellationToken);
+        string htmlFileContent = await File.ReadAllTextAsync(filePath, cancellationToken);
+        if (injectedFilePath is null)
+        {
+            await WriteBytesAsync(httpResponse, Encoding.UTF8.GetBytes(htmlFileContent), cancellationToken);
+            return;
+        }
+
+        string injectedHtmlFileContent = await File.ReadAllTextAsync(injectedFilePath, cancellationToken);
 
         var document = new HtmlDocument();
         document.LoadHtml(htmlFileContent);
@@ -34,15 +40,15 @@ public static class HttpResponse
         await WriteBytesAsync(httpResponse, Encoding.UTF8.GetBytes(newHtml), cancellationToken);
     }
 
-    public static Task NotFoundAsync(HttpListenerResponse httpResponse, string url, string notFoundHtmlFile, CancellationToken cancellationToken = default)
+    public static Task NotFoundAsync(HttpListenerResponse httpResponse, string url, string? notFoundHtmlFilePath, string? defaultNotFoundHtmlFilePath, CancellationToken cancellationToken = default)
     {
-        httpResponse.ContentType = ".html";
+        httpResponse.ContentType = "text/html";
         httpResponse.StatusCode = 404;
         httpResponse.StatusDescription = "Not Found";
 
-        return File.Exists(notFoundHtmlFile)
-            ? FromFileAsync(httpResponse, notFoundHtmlFile, cancellationToken)
-            : DefaultNotFoundAsync(httpResponse, url, cancellationToken);
+        return File.Exists(notFoundHtmlFilePath)
+            ? FromFileAsync(httpResponse, notFoundHtmlFilePath, cancellationToken)
+            : DefaultNotFoundAsync(httpResponse, defaultNotFoundHtmlFilePath, url, cancellationToken);
     }
 
     public static void NotModified(HttpListenerResponse httpResponse)
@@ -59,11 +65,11 @@ public static class HttpResponse
         httpResponse.Headers.Add("Cache-Control", "public, max-age=0");
     }
 
-    private static async Task DefaultNotFoundAsync(HttpListenerResponse httpResponse, string url, CancellationToken cancellationToken = default)
+    private static async Task DefaultNotFoundAsync(HttpListenerResponse httpResponse, string? defaultNotFoundHtmlFile, string url, CancellationToken cancellationToken = default)
     {
-        if (File.Exists("./StaticContent/Default404NotFound.html"))
+        if (File.Exists(defaultNotFoundHtmlFile))
         {
-            string notFoundTemplateStr = await File.ReadAllTextAsync("./StaticContent/Default404NotFound.html", cancellationToken);
+            string notFoundTemplateStr = await File.ReadAllTextAsync(defaultNotFoundHtmlFile, cancellationToken);
             var templateModel = new Dictionary<string, object>() { { "Url", url } };
             string template = TemplateEngine.Run(notFoundTemplateStr, templateModel);
 
