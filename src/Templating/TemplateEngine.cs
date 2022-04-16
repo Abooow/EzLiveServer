@@ -5,7 +5,25 @@ namespace EzLiveServer.Templating;
 
 public static class TemplateEngine
 {
+    /*
+     * Matches:
+     *         @FirstName
+     *         @a
+     *         @Any_Word
+     *         @Numbers123
+     *         @Hello! (will not match the "!" at the end, only "@Hello")
+     *         Text_Before@Random.Characters? (same as above, will only match "@Random")
+     *         
+     * Does not match:
+     *         @
+     *         @@Url
+     * ------------------------------------
+     * Example:
+     *         Hello, @FirstName @LastName!
+     *         Click <a href="@UnsubscribeUrl">Here</a> to unsubscribe.
+     */
     private const string propertyRegexString = @"(?:[^@]|^)(@(\w+))";
+
     private static readonly Regex propertyRegex = new(propertyRegexString, RegexOptions.Multiline | RegexOptions.Compiled);
 
     public static string Run(string template, IReadOnlyDictionary<string, object> modelValues)
