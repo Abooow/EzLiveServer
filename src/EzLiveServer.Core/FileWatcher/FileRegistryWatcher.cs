@@ -1,4 +1,4 @@
-﻿namespace EzLiveServer.FileWatcher;
+﻿namespace EzLiveServer.Core.FileWatcher;
 
 public sealed class FileRegistryWatcher : FileRegistry, IDisposable
 {

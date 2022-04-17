@@ -1,5 +1,5 @@
-﻿using EzLiveServer;
-using EzLiveServer.Options;
+﻿using EzLiveServer.Core;
+using EzLiveServer.Core.Options;
 
 var options = new FileServerOptionsBuilder()
     .WithPort(5069)

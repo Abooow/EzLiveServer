@@ -20,9 +20,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
-
+	
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.40" />
+    <ProjectReference Include="..\EzLiveServer.Core\EzLiveServer.Core.csproj" />
   </ItemGroup>
 
 </Project>

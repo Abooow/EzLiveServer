@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 
-namespace EzLiveServer.Templating;
+namespace EzLiveServer.Core.Templating;
 
 public static class TemplateEngine
 {

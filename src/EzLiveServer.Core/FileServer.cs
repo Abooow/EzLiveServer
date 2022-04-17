@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Web;
-using EzLiveServer.FileWatcher;
-using EzLiveServer.Options;
-using EzLiveServer.WebSockets;
+using EzLiveServer.Core.FileWatcher;
+using EzLiveServer.Core.Options;
+using EzLiveServer.Core.WebSockets;
 
-namespace EzLiveServer;
+namespace EzLiveServer.Core;
 
 public sealed class FileServer : Server
 {
@@ -96,7 +96,7 @@ public sealed class FileServer : Server
             return true;
 
         var clientLastModifiedDate = DateTime.Parse(lastModifiedHeader).ToUniversalTime();
-        lastModified = new DateTime(lastModified.Ticks - (lastModified.Ticks % TimeSpan.TicksPerSecond), lastModified.Kind); // Removes milliseconds.
+        lastModified = new DateTime(lastModified.Ticks - lastModified.Ticks % TimeSpan.TicksPerSecond, lastModified.Kind); // Removes milliseconds.
         return lastModified > clientLastModifiedDate;
     }
 

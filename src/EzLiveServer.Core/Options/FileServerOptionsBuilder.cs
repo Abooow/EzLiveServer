@@ -1,4 +1,4 @@
-﻿namespace EzLiveServer.Options;
+﻿namespace EzLiveServer.Core.Options;
 
 public class FileServerOptionsBuilder
 {

@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Text;
 
-namespace EzLiveServer;
+namespace EzLiveServer.Core;
 
 public class Server : IDisposable
 {

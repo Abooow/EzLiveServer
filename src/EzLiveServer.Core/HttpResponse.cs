@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using System.Text;
-using EzLiveServer.Templating;
+using EzLiveServer.Core.Templating;
 using HtmlAgilityPack;
 
-namespace EzLiveServer;
+namespace EzLiveServer.Core;
 
 public static class HttpResponse
 {
